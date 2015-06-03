@@ -1,0 +1,10 @@
+#
+# Project Dependencies
+#
+
+# Volume Control for Alsa
+github.com/bklimt/volume            80fc7dc8f37fa755c82310284be7301b1ae2e819
+# Redis Bindings
+gopkg.in/redis.v3
+# Cobra - POSIX CLI
+github.com/spf13/cobra              69e5f196b5d30673deb07a2221d89cf62e4b74ae
