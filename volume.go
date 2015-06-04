@@ -18,17 +18,36 @@ import (
 // Holds the current volume level
 var CURRENT_LEVEL int
 
-const VOLUME_STATE_KEY string = "fm:player:volume"
+// State Keys
+const (
+	VOLUME_STATE_KEY string = "fm:player:volume"
+	MUTE_STATE_KEY   string = "fm:player:mute"
+)
 
+// Event Names
 const (
 	SET_VOLUME_EVENT    string = "set_volume"
+	SET_MUTE_EVENT      string = "set_mute"
 	CHANGE_VOLUME_EVENT string = "volume_changed"
+	CHANGE_MUTE_EVENT   string = "mute_changed"
 )
+
+// Base Event
+type Event struct {
+	Event string `json:"event"`
+	Value json.RawMessage
+}
 
 // JSON Structure for a Volume Change event
 type VolumeEvent struct {
 	Event  string `json:"event"`
 	Volume int    `json:"volume"`
+}
+
+// JSON Structure for a Mute Change event
+type MuteEvent struct {
+	Event string `json:"event"`
+	Mute  int    `json:"mute"`
 }
 
 // Volume Manage
@@ -87,14 +106,20 @@ func (v *VolumeManager) Subscribe() {
 
 // Process Volume Event
 func (v *VolumeManager) processMessage(m []byte) error {
-	event := &VolumeEvent{}
+	event := &Event{}
 	err := json.Unmarshal(m, event)
 	if err != nil {
 		return err
 	}
 
-	if event.Event == SET_VOLUME_EVENT {
-		if err := v.setVolume(event.Volume); err != nil {
+	// Switch the raw event type
+	switch event.Event {
+	case SET_VOLUME_EVENT:
+		if err := v.setVolume(&m); err != nil {
+			log.Println(err)
+		}
+	case SET_MUTE_EVENT:
+		if err := v.setMute(&m); err != nil {
 			log.Println(err)
 		}
 	}
@@ -103,18 +128,25 @@ func (v *VolumeManager) processMessage(m []byte) error {
 }
 
 // Set the Volume on the device & Publishes Volume Changed Event
-func (v *VolumeManager) setVolume(l int) error {
+func (v *VolumeManager) setVolume(m *[]byte) error {
 	var err error
 
-	// Validate intended level
-	if l > 100 || l < 0 {
-		return errors.New(fmt.Sprintf("%v is not between 0 and 100", l))
+	// Unmarshal the JSON
+	event := &VolumeEvent{}
+	err = json.Unmarshal(*m, event)
+	if err != nil {
+		return err
 	}
 
 	// Convert out ints to floats
 	min := float64(*v.MinVolume)
 	max := float64(*v.MaxVolume)
-	vol := float64(l) // Percentage
+	vol := float64(event.Volume) // Percentage
+
+	// Validate intended level
+	if vol > 100 || vol < 0 {
+		return errors.New(fmt.Sprintf("%v is not between 0 and 100", vol))
+	}
 
 	// Calculate the adjusted volume level - Rounding to the nearest whole number
 	actual := int(math.Floor((vol*((max-min)/100) + min) + .5))
@@ -129,17 +161,86 @@ func (v *VolumeManager) setVolume(l int) error {
 	// Create Messages
 	message, err := json.Marshal(&VolumeEvent{
 		Event:  CHANGE_VOLUME_EVENT,
-		Volume: l,
+		Volume: event.Volume,
 	})
 
 	// Set Volume State Redis Key
-	err = v.RedisClient.Set(VOLUME_STATE_KEY, strconv.Itoa(l), 0).Err()
+	err = v.RedisClient.Set(VOLUME_STATE_KEY, strconv.Itoa(event.Volume), 0).Err()
 	if err != nil {
 		return err
 	}
 
 	// Publish Change Event
 	log.Println("Publish Volume Change Event")
+	err = v.RedisClient.Publish(*v.RedisChannel, string(message[:])).Err()
+	if err != nil {
+		return err
+	}
+
+	// Set Mute State to 0
+	if err := v.publishMuteChangeEvent(0); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Set the mute level
+func (v *VolumeManager) setMute(m *[]byte) error {
+	var err error
+
+	// Unmarshal the JSON
+	event := &MuteEvent{}
+	err = json.Unmarshal(*m, event)
+	if err != nil {
+		return err
+	}
+
+	// Check we get a valid mute state
+	if event.Mute != 0 && event.Mute != 1 {
+		return errors.New(fmt.Sprintf("%v is not a valid mute state", event.Mute))
+	}
+
+	// Restore sound level to 0 on Mute
+	if event.Mute == 0 {
+		volume.SetVolume(*v.DeviceName, *v.MixerName, CURRENT_LEVEL)
+	}
+
+	// Set sound level to 0 on Mute
+	if event.Mute == 1 {
+		CURRENT_LEVEL, _ = volume.GetVolume(*v.DeviceName, *v.MixerName)
+		volume.SetVolume(*v.DeviceName, *v.MixerName, 0)
+	}
+
+	// Set Mute State
+	if err := v.publishMuteChangeEvent(event.Mute); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Publush Mute State
+func (v *VolumeManager) publishMuteChangeEvent(state int) error {
+	var err error
+
+	log.Println(fmt.Sprintf("Set %v: %v", MUTE_STATE_KEY, state))
+	// Set Mute State Redis Key to value of state
+	err = v.RedisClient.Set(MUTE_STATE_KEY, strconv.Itoa(state), 0).Err()
+	if err != nil {
+		return err
+	}
+
+	// Create Messages
+	message, err := json.Marshal(&MuteEvent{
+		Event: CHANGE_MUTE_EVENT,
+		Mute:  state,
+	})
+	if err != nil {
+		return err
+	}
+
+	log.Println(fmt.Sprintf("Publish %v: %v", CHANGE_MUTE_EVENT, state))
 	err = v.RedisClient.Publish(*v.RedisChannel, string(message[:])).Err()
 	if err != nil {
 		return err
