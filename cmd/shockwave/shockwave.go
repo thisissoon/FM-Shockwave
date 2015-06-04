@@ -3,6 +3,12 @@
 package main
 
 import (
+	"log"
+	"os"
+	"os/signal"
+
+	"gopkg.in/redis.v3"
+
 	"github.com/spf13/cobra"
 	"github.com/thisissoon/FM-Shockwave"
 )
@@ -24,7 +30,27 @@ var ShockWaveCmd = &cobra.Command{
 	Short: "Volume Managment Service",
 	Long:  shockWaveLongDesc,
 	Run: func(cmd *cobra.Command, args []string) {
-		shockwave.Foo()
+		log.Println("Starting Shockwave")
+
+		// Create a redis client
+		redis_client := redis.NewClient(&redis.Options{
+			Network: "tcp",
+			Addr:    redis_address,
+		})
+
+		// Create Volume Manager
+		v := shockwave.NewVolumeManager(redis_client, &redis_channel, &max_volume, &min_volume)
+		go v.Subscribe() // Subscribe to the redis Pub/Sub channel and consume the messages
+
+		// Channel to listen for OS Signals
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals, os.Interrupt, os.Kill)
+
+		// Run for ever unless we get a signal
+		for sig := range signals {
+			log.Println(sig)
+			os.Exit(1)
+		}
 	},
 }
 
