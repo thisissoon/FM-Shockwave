@@ -197,12 +197,12 @@ func (v *VolumeManager) setMute(m *[]byte) error {
 	}
 
 	if event.Mute {
-		// Restore sound level to 0 on Mute
-		volume.SetVolume(*v.DeviceName, *v.MixerName, CURRENT_LEVEL)
-	} else {
 		// Set sound level to 0 on Mute
 		CURRENT_LEVEL, _ = volume.GetVolume(*v.DeviceName, *v.MixerName)
 		volume.SetVolume(*v.DeviceName, *v.MixerName, 0)
+	} else {
+		// Restore sound level to 0 on Mute
+		volume.SetVolume(*v.DeviceName, *v.MixerName, CURRENT_LEVEL)
 	}
 
 	// Set Mute State
