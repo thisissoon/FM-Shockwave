@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/thisissoon/volume"
@@ -103,6 +104,8 @@ func (v *VolumeManager) processMessage(m []byte) error {
 
 // Set the Volume on the device & Publishes Volume Changed Event
 func (v *VolumeManager) setVolume(l int) error {
+	var err error
+
 	// Validate intended level
 	if l > 100 || l < 0 {
 		return errors.New(fmt.Sprintf("%v is not between 0 and 100", l))
@@ -130,7 +133,7 @@ func (v *VolumeManager) setVolume(l int) error {
 	})
 
 	// Set Volume State Redis Key
-	err := v.RedisClient.Set(VOLUME_STATE_KEY, l, 0).Err()
+	err = v.RedisClient.Set(VOLUME_STATE_KEY, strconv.Itoa(l), 0).Err()
 	if err != nil {
 		return err
 	}
