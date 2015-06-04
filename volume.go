@@ -17,6 +17,8 @@ import (
 // Holds the current volume level
 var CURRENT_LEVEL int
 
+const VOLUME_STATE_KEY string = "fm:player:volume"
+
 const (
 	SET_VOLUME_EVENT    string = "set_volume"
 	CHANGE_VOLUME_EVENT string = "volume_changed"
@@ -126,6 +128,12 @@ func (v *VolumeManager) setVolume(l int) error {
 		Event:  CHANGE_VOLUME_EVENT,
 		Volume: l,
 	})
+
+	// Set Volume State Redis Key
+	err := r.RedisClient.Set(VOLUME_STATE_KEY, l, 0).Err()
+	if err != nil {
+		return err
+	}
 
 	// Publish Change Event
 	log.Println("Publish Volume Change Event")
