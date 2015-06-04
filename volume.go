@@ -130,7 +130,7 @@ func (v *VolumeManager) setVolume(l int) error {
 	})
 
 	// Set Volume State Redis Key
-	err := r.RedisClient.Set(VOLUME_STATE_KEY, l, 0).Err()
+	err := v.RedisClient.Set(VOLUME_STATE_KEY, l, 0).Err()
 	if err != nil {
 		return err
 	}
