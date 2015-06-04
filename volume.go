@@ -10,7 +10,7 @@ import (
 	"math"
 	"strings"
 
-	"github.com/bklimt/volume"
+	"github.com/thisissoon/volume"
 	"gopkg.in/redis.v3"
 )
 

@@ -3,7 +3,7 @@
 #
 
 # Volume Control for Alsa
-github.com/bklimt/volume            80fc7dc8f37fa755c82310284be7301b1ae2e819
+github.com/thisissoon/volume        162da24941f0aa9dd0ebb22573d4ab4f743fd853
 # Redis Bindings
 gopkg.in/redis.v3
 # Cobra - POSIX CLI
