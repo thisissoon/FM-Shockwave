@@ -19,6 +19,8 @@ var (
 	redis_channel string
 	max_volume    int
 	min_volume    int
+	mixer         string
+	device        string
 )
 
 // Long Command Description
@@ -39,7 +41,13 @@ var ShockWaveCmd = &cobra.Command{
 		})
 
 		// Create Volume Manager
-		v := shockwave.NewVolumeManager(redis_client, &redis_channel, &max_volume, &min_volume)
+		v := shockwave.NewVolumeManager(
+			redis_client,
+			&redis_channel,
+			&max_volume,
+			&min_volume,
+			&mixer,
+			&device)
 		go v.Subscribe() // Subscribe to the redis Pub/Sub channel and consume the messages
 
 		// Channel to listen for OS Signals
@@ -60,6 +68,8 @@ func init() {
 	ShockWaveCmd.Flags().StringVarP(&redis_channel, "channel", "c", "", "Redis Channel Name")
 	ShockWaveCmd.Flags().IntVarP(&max_volume, "max_volume", "", 100, "Max Volume Level")
 	ShockWaveCmd.Flags().IntVarP(&min_volume, "min_volume", "", 0, "Min Volume Level")
+	ShockWaveCmd.Flags().StringVarP(&device, "device", "d", "default", "Audio Device Name")
+	ShockWaveCmd.Flags().StringVarP(&mixer, "mixer", "m", "PCM", "Audio Mixer Name")
 }
 
 // Application Entry Point

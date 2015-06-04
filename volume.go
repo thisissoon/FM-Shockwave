@@ -34,15 +34,19 @@ type VolumeManager struct {
 	RedisChannel *string
 	MaxVolume    *int
 	MinVolume    *int
+	MixerName    *string
+	DeviceName   *string
 }
 
 // Constructs a new Volume Manager Type
-func NewVolumeManager(r *redis.Client, c *string, max *int, min *int) *VolumeManager {
+func NewVolumeManager(r *redis.Client, c *string, max *int, min *int, mixer *string, device *string) *VolumeManager {
 	return &VolumeManager{
 		RedisClient:  r,
 		RedisChannel: c,
 		MaxVolume:    max,
 		MinVolume:    min,
+		MixerName:    mixer,
+		DeviceName:   device,
 	}
 }
 
@@ -116,7 +120,7 @@ func (v *VolumeManager) setVolume(l int) error {
 	CURRENT_LEVEL = actual
 
 	// Set the Volume on the Device
-	volume.SetVolume("PCM", actual)
+	volume.SetVolume(*v.DeviceName, *v.MixerName, actual)
 
 	// Create Messages
 	message, err := json.Marshal(&VolumeEvent{
