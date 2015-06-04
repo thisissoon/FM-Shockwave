@@ -47,7 +47,7 @@ type VolumeEvent struct {
 // JSON Structure for a Mute Change event
 type MuteEvent struct {
 	Event string `json:"event"`
-	Mute  int    `json:"mute"`
+	Mute  bool   `json:"mute"`
 }
 
 // Volume Manage
@@ -178,7 +178,7 @@ func (v *VolumeManager) setVolume(m *[]byte) error {
 	}
 
 	// Set Mute State to 0
-	if err := v.publishMuteChangeEvent(0); err != nil {
+	if err := v.publishMuteChangeEvent(false); err != nil {
 		return err
 	}
 
@@ -196,18 +196,11 @@ func (v *VolumeManager) setMute(m *[]byte) error {
 		return err
 	}
 
-	// Check we get a valid mute state
-	if event.Mute != 0 && event.Mute != 1 {
-		return errors.New(fmt.Sprintf("%v is not a valid mute state", event.Mute))
-	}
-
-	// Restore sound level to 0 on Mute
-	if event.Mute == 0 {
+	if event.Mute {
+		// Restore sound level to 0 on Mute
 		volume.SetVolume(*v.DeviceName, *v.MixerName, CURRENT_LEVEL)
-	}
-
-	// Set sound level to 0 on Mute
-	if event.Mute == 1 {
+	} else {
+		// Set sound level to 0 on Mute
 		CURRENT_LEVEL, _ = volume.GetVolume(*v.DeviceName, *v.MixerName)
 		volume.SetVolume(*v.DeviceName, *v.MixerName, 0)
 	}
@@ -221,12 +214,12 @@ func (v *VolumeManager) setMute(m *[]byte) error {
 }
 
 // Publush Mute State
-func (v *VolumeManager) publishMuteChangeEvent(state int) error {
+func (v *VolumeManager) publishMuteChangeEvent(state bool) error {
 	var err error
 
 	log.Println(fmt.Sprintf("Set %v: %v", MUTE_STATE_KEY, state))
 	// Set Mute State Redis Key to value of state
-	err = v.RedisClient.Set(MUTE_STATE_KEY, strconv.Itoa(state), 0).Err()
+	err = v.RedisClient.Set(MUTE_STATE_KEY, strconv.Itoa(Btoi(state)), 0).Err()
 	if err != nil {
 		return err
 	}
@@ -247,4 +240,12 @@ func (v *VolumeManager) publishMuteChangeEvent(state int) error {
 	}
 
 	return nil
+}
+
+// Convert bool to int
+func Btoi(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
