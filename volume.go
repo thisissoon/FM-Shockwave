@@ -113,7 +113,6 @@ func (v *VolumeManager) setVolume(l int) error {
 
 	// Calculate the adjusted volume level - Rounding to the nearest whole number
 	actual := int(math.Floor((vol*((max-min)/100) + min) + .5))
-	log.Println(actual)
 	log.Println(fmt.Sprintf("Set level to: %v%% (%v%%)", vol, actual))
 
 	// Store the new Volume Level
