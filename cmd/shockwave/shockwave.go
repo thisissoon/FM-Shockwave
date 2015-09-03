@@ -11,7 +11,9 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/thisissoon/FM-Shockwave"
+	"github.com/thisissoon/FM-Shockwave/event"
 	"github.com/thisissoon/FM-Shockwave/socket"
+	"github.com/thisissoon/FM-Shockwave/volume"
 )
 
 // Flag Variable Holders
@@ -80,9 +82,28 @@ func init() {
 
 // Application Entry Point
 func main() {
+	// Create Channels
+	eventChannel := make(chan []byte)
+	volumeChannel := make(chan int)
+	muteChannel := make(chan bool)
 
-	perceptor := socket.NewPerceptorService(&perceptor_addr, &secret)
+	// Consume events from Perceptor
+	perceptor := socket.NewPerceptorService(&perceptor_addr, &secret, eventChannel)
 	go perceptor.Run()
+
+	// Event Handler
+	eventHandler := event.NewHandler(eventChannel, muteChannel, volumeChannel)
+	go eventHandler.Run()
+
+	// Volume Manager
+	volumeManager := volume.NewVolumeManager(&volume.VolumeManagerOpts{
+		Channel:    volumeChannel,
+		MaxVolume:  &max_volume,
+		MinVolume:  &min_volume,
+		MixerName:  &mixer,
+		DeviceName: &device,
+	})
+	go volumeManager.Run()
 
 	ShockWaveCmd.Execute()
 }
