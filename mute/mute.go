@@ -65,6 +65,7 @@ func (m *MuteManager) put(active bool) error {
 	payload, _ := json.Marshal(PerceptorPayload{
 		Active: active,
 	})
+	log.Debugf("Mute Payload: %s", payload)
 
 	// Create Request
 	client := &http.Client{}
