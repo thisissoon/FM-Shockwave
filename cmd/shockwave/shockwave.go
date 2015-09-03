@@ -70,11 +70,12 @@ var ShockWaveCmd = &cobra.Command{
 			MixerName:     &mixer,
 			DeviceName:    &device,
 			PerceptorAddr: &perceptorAddr,
+			Secret:        &secret,
 		})
 		go volumeManager.Run()
 
 		// Mute Manager
-		muteManager := mute.NewMuteManager(muteChannel, &mixer, &device)
+		muteManager := mute.NewMuteManager(muteChannel, &mixer, &device, &perceptorAddr, &secret)
 		go muteManager.Run()
 
 		// Channel to listen for OS Signals
