@@ -105,5 +105,9 @@ func main() {
 	})
 	go volumeManager.Run()
 
+	// Mute Manager
+	muteManager := volume.NewMuteManager(muteChannel, &mixer, &device)
+	go muteManager.Run()
+
 	ShockWaveCmd.Execute()
 }

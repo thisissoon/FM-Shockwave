@@ -11,11 +11,6 @@ import (
 	device "github.com/thisissoon/volume"
 )
 
-type volumeEvent struct {
-	Event  string `json:"event"`
-	Volume int    `json:"volume"`
-}
-
 type VolumeManagerOpts struct {
 	Channel    chan int
 	MaxVolume  *int

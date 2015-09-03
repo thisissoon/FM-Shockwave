@@ -1,3 +1,48 @@
 // Handle Mute Toggling
 
 package volume
+
+import (
+	"fmt"
+
+	device "github.com/thisissoon/volume"
+)
+
+var CURRENT_LEVEL int
+
+type MuteManager struct {
+	Channel    chan bool
+	MixerName  *string
+	DeviceName *string
+}
+
+func (m *MuteManager) Run() {
+	for {
+		active := <-m.Channel
+		if err := m.set(active); err != nil {
+			fmt.Println(err)
+		}
+	}
+}
+
+func (m *MuteManager) set(active bool) error {
+	if active {
+		// Set sound level to 0 on Mute
+		CURRENT_LEVEL, _ = device.GetVolume(*m.DeviceName, *m.MixerName)
+		device.SetVolume(*m.DeviceName, *m.MixerName, 0)
+	} else {
+		// Restore sound level to 0 on Mute
+		device.SetVolume(*m.DeviceName, *m.MixerName, CURRENT_LEVEL)
+	}
+
+	return nil
+}
+
+// Construct a new mute manager
+func NewMuteManager(c chan bool, m *string, d *string) *MuteManager {
+	return &MuteManager{
+		Channel:    c,
+		MixerName:  m,
+		DeviceName: d,
+	}
+}
