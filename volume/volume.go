@@ -5,9 +5,9 @@ package volume
 import (
 	"errors"
 	"fmt"
-	"log"
 	"math"
 
+	log "github.com/Sirupsen/logrus"
 	device "github.com/thisissoon/volume"
 )
 
@@ -28,7 +28,7 @@ func (v *VolumeManager) Run() {
 	for {
 		level := <-v.opts.Channel
 		if err := v.set(level); err != nil {
-			fmt.Println(err)
+			log.Errorf("Failed to set Volume", err)
 		}
 	}
 }
@@ -47,7 +47,7 @@ func (v *VolumeManager) set(i int) error {
 
 	// Calculate the adjusted volume level - Rounding to the nearest whole number
 	volume := int(math.Floor((level*((max-min)/100) + min) + .5))
-	log.Println(fmt.Sprintf("Set level to: %v%% (%v%%)", level, volume))
+	log.Infof("Set level to: %v%% (%v%%)", level, volume)
 
 	// Set the Volume on the Device
 	device.SetVolume(*v.opts.DeviceName, *v.opts.MixerName, volume)

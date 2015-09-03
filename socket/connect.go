@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/websocket"
 )
 
@@ -31,7 +32,7 @@ func (p *PerceptorService) Run() {
 	for {
 		conn, _, err := d.Dial(fmt.Sprintf("ws://%s", *p.addr), p.headers())
 		if err != nil {
-			fmt.Println(fmt.Sprintf("WS Connection Failure: %s", err))
+			log.Errorf("WS Connection Failure: %s", err)
 			time.Sleep(time.Second)
 			continue
 		}
@@ -40,13 +41,14 @@ func (p *PerceptorService) Run() {
 			t, m, e := conn.ReadMessage()
 			// On Error close the connection and break the loop
 			if e != nil {
-				fmt.Println("Error")
+				log.Errorf("WS Connection Lost: %s", err)
 				conn.Close()
 				break ReadLoop
 			}
 
 			if t == websocket.TextMessage {
 				// Put the message on the event channel
+				log.Debugf("Recived Message: %s", m)
 				p.channel <- m
 			}
 		}

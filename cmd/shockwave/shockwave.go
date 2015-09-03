@@ -3,10 +3,10 @@
 package main
 
 import (
-	"log"
 	"os"
 	"os/signal"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/thisissoon/FM-Shockwave/event"
 	"github.com/thisissoon/FM-Shockwave/socket"
@@ -21,6 +21,7 @@ var (
 	min_volume     int
 	mixer          string
 	device         string
+	log_level      string
 )
 
 // Long Command Description
@@ -32,7 +33,48 @@ var ShockWaveCmd = &cobra.Command{
 	Short: "Volume Managment Service",
 	Long:  shockWaveLongDesc,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Println("Starting Shockwave")
+		switch log_level {
+		case "debug":
+			log.SetLevel(log.DebugLevel)
+		case "info":
+			log.SetLevel(log.InfoLevel)
+		case "warn":
+			log.SetLevel(log.WarnLevel)
+		case "error":
+			log.SetLevel(log.ErrorLevel)
+		default:
+			log.SetLevel(log.WarnLevel)
+		}
+
+		log.Info("Starting Shockwave")
+
+		// Create Channels
+		eventChannel := make(chan []byte)
+		volumeChannel := make(chan int)
+		muteChannel := make(chan bool)
+
+		// Consume events from Perceptor
+		perceptor := socket.NewPerceptorService(&perceptor_addr, &secret, eventChannel)
+		go perceptor.Run()
+
+		// Event Handler
+		eventHandler := event.NewHandler(eventChannel, muteChannel, volumeChannel)
+		go eventHandler.Run()
+
+		// Volume Manager
+		volumeManager := volume.NewVolumeManager(&volume.VolumeManagerOpts{
+			Channel:    volumeChannel,
+			MaxVolume:  &max_volume,
+			MinVolume:  &min_volume,
+			MixerName:  &mixer,
+			DeviceName: &device,
+		})
+		go volumeManager.Run()
+
+		// Mute Manager
+		muteManager := volume.NewMuteManager(muteChannel, &mixer, &device)
+		go muteManager.Run()
+
 		// Channel to listen for OS Signals
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, os.Interrupt, os.Kill)
@@ -52,36 +94,10 @@ func init() {
 	ShockWaveCmd.Flags().IntVarP(&min_volume, "min_volume", "", 0, "Min Volume Level")
 	ShockWaveCmd.Flags().StringVarP(&device, "device", "d", "default", "Audio Device Name")
 	ShockWaveCmd.Flags().StringVarP(&mixer, "mixer", "m", "PCM", "Audio Mixer Name")
+	ShockWaveCmd.Flags().StringVarP(&log_level, "log_level", "l", "debug", "Log Level")
 }
 
 // Application Entry Point
 func main() {
-	// Create Channels
-	eventChannel := make(chan []byte)
-	volumeChannel := make(chan int)
-	muteChannel := make(chan bool)
-
-	// Consume events from Perceptor
-	perceptor := socket.NewPerceptorService(&perceptor_addr, &secret, eventChannel)
-	go perceptor.Run()
-
-	// Event Handler
-	eventHandler := event.NewHandler(eventChannel, muteChannel, volumeChannel)
-	go eventHandler.Run()
-
-	// Volume Manager
-	volumeManager := volume.NewVolumeManager(&volume.VolumeManagerOpts{
-		Channel:    volumeChannel,
-		MaxVolume:  &max_volume,
-		MinVolume:  &min_volume,
-		MixerName:  &mixer,
-		DeviceName: &device,
-	})
-	go volumeManager.Run()
-
-	// Mute Manager
-	muteManager := volume.NewMuteManager(muteChannel, &mixer, &device)
-	go muteManager.Run()
-
 	ShockWaveCmd.Execute()
 }

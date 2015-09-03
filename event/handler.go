@@ -4,12 +4,13 @@ package event
 
 import (
 	"encoding/json"
-	"fmt"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 const (
-	VOLUME_EVENT string = "volume_changed"
-	MUTE_EVENT   string = "mute_changed"
+	VOLUME_EVENT string = "set_volume"
+	MUTE_EVENT   string = "set_mute"
 )
 
 type Event struct {
@@ -37,7 +38,7 @@ func (h *Handler) Run() {
 		msg := <-h.eventChannel
 		var event Event
 		if err := json.Unmarshal(msg, &event); err != nil {
-			fmt.Println(err)
+			log.Errorf("Failed to unmarshal event", err)
 			continue
 		}
 		switch event.Type {
@@ -48,11 +49,9 @@ func (h *Handler) Run() {
 				VolumeEvent
 			}
 			if err := json.Unmarshal(msg, &volume); err != nil {
-				fmt.Println(err)
+				log.Errorf("Failed to unmarshal Volume event", err)
 				continue
 			}
-			// Push to the VolumeChannel for the VolumeManager to
-			// set the volume: TODO: Log It
 			go func(level int) {
 				h.volumeChannel <- level
 			}(volume.Level)
@@ -63,11 +62,9 @@ func (h *Handler) Run() {
 				MuteEvent
 			}
 			if err := json.Unmarshal(msg, &mute); err != nil {
-				fmt.Println(err)
+				log.Errorf("Failed to unmarshal Mute event", err)
 				continue
 			}
-			// Push to the VolumeChannel for the VolumeManager to
-			// set the volume: TODO: Log It
 			go func(active bool) {
 				h.muteChannel <- active
 			}(mute.Active)

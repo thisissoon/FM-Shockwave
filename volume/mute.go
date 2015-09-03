@@ -3,8 +3,7 @@
 package volume
 
 import (
-	"fmt"
-
+	log "github.com/Sirupsen/logrus"
 	device "github.com/thisissoon/volume"
 )
 
@@ -20,7 +19,7 @@ func (m *MuteManager) Run() {
 	for {
 		active := <-m.Channel
 		if err := m.set(active); err != nil {
-			fmt.Println(err)
+			log.Errorf("Failed to set mute state", err)
 		}
 	}
 }
@@ -28,10 +27,12 @@ func (m *MuteManager) Run() {
 func (m *MuteManager) set(active bool) error {
 	if active {
 		// Set sound level to 0 on Mute
+		log.Info("Mute Volume")
 		CURRENT_LEVEL, _ = device.GetVolume(*m.DeviceName, *m.MixerName)
 		device.SetVolume(*m.DeviceName, *m.MixerName, 0)
 	} else {
 		// Restore sound level to 0 on Mute
+		log.Infof("Restore Volume to: %v", CURRENT_LEVEL)
 		device.SetVolume(*m.DeviceName, *m.MixerName, CURRENT_LEVEL)
 	}
 
