@@ -11,16 +11,19 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/thisissoon/FM-Shockwave"
+	"github.com/thisissoon/FM-Shockwave/socket"
 )
 
 // Flag Variable Holders
 var (
-	redis_address string
-	redis_channel string
-	max_volume    int
-	min_volume    int
-	mixer         string
-	device        string
+	redis_address  string
+	redis_channel  string
+	perceptor_addr string
+	secret         string
+	max_volume     int
+	min_volume     int
+	mixer          string
+	device         string
 )
 
 // Long Command Description
@@ -64,6 +67,9 @@ var ShockWaveCmd = &cobra.Command{
 
 // Set Command Line Flags
 func init() {
+	ShockWaveCmd.Flags().StringVarP(&perceptor_addr, "perceptor", "p", "perceptor.thisissoon.fm", "Perceptor Server Address")
+	ShockWaveCmd.Flags().StringVarP(&secret, "secret", "s", "CHANGE_ME", "Client Secret Ket")
+
 	ShockWaveCmd.Flags().StringVarP(&redis_address, "redis", "r", "127.0.0.1:6379", "Redis Server Address")
 	ShockWaveCmd.Flags().StringVarP(&redis_channel, "channel", "c", "", "Redis Channel Name")
 	ShockWaveCmd.Flags().IntVarP(&max_volume, "max_volume", "", 100, "Max Volume Level")
@@ -74,5 +80,9 @@ func init() {
 
 // Application Entry Point
 func main() {
+
+	perceptor := socket.NewPerceptorService(&perceptor_addr, &secret)
+	go perceptor.Run()
+
 	ShockWaveCmd.Execute()
 }
