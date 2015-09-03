@@ -14,8 +14,9 @@ import (
 )
 
 type PerceptorService struct {
-	addr   *string
-	secret *string
+	channel chan []byte
+	addr    *string
+	secret  *string
 }
 
 // Connect to Perceptor WS Service and Consume the Messages from the Service
@@ -44,8 +45,10 @@ func (p *PerceptorService) Run() {
 				break ReadLoop
 			}
 
-			// TODO: Push to a message channel
-			fmt.Println(t, string(m[:]), e)
+			if t == websocket.TextMessage {
+				// Put the message on the event channel
+				p.channel <- m
+			}
 		}
 	}
 }
@@ -67,9 +70,10 @@ func (p *PerceptorService) headers() http.Header {
 }
 
 // Creates a new PerceptorService
-func NewPerceptorService(addr *string, secret *string) *PerceptorService {
+func NewPerceptorService(addr *string, secret *string, channel chan []byte) *PerceptorService {
 	return &PerceptorService{
-		addr:   addr,
-		secret: secret,
+		channel: channel,
+		addr:    addr,
+		secret:  secret,
 	}
 }
