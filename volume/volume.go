@@ -73,7 +73,7 @@ func (v *VolumeManager) set(i int) error {
 
 func (v *VolumeManager) put(level int) error {
 	// Build URL
-	url := fmt.Sprintf("http://%s/volume", v.opts.PerceptorAddr)
+	url := fmt.Sprintf("http://%s/volume", *v.opts.PerceptorAddr)
 
 	// Generate Payload
 	payload, _ := json.Marshal(PerceptorPayload{

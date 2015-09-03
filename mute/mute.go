@@ -59,7 +59,7 @@ func (m *MuteManager) set(active bool) error {
 
 func (m *MuteManager) put(active bool) error {
 	// Build URL
-	url := fmt.Sprintf("http://%s/mute", m.PerceptorAddr)
+	url := fmt.Sprintf("http://%s/mute", *m.PerceptorAddr)
 
 	// Generate Payload
 	payload, _ := json.Marshal(PerceptorPayload{
