@@ -20,6 +20,10 @@ type VolumeEvent struct {
 	Level int `json:"volume"`
 }
 
+type MuteEvent struct {
+	Active bool `json:"mute"`
+}
+
 type Handler struct {
 	eventChannel  chan []byte
 	muteChannel   chan bool
@@ -37,6 +41,7 @@ func (h *Handler) Run() {
 			continue
 		}
 		switch event.Type {
+		// It's a volume change event
 		case VOLUME_EVENT:
 			var volume struct {
 				Event
@@ -51,6 +56,21 @@ func (h *Handler) Run() {
 			go func(level int) {
 				h.volumeChannel <- level
 			}(volume.Level)
+		// It's a Mute Event
+		case MUTE_EVENT:
+			var mute struct {
+				Event
+				MuteEvent
+			}
+			if err := json.Unmarshal(msg, &mute); err != nil {
+				fmt.Println(err)
+				continue
+			}
+			// Push to the VolumeChannel for the VolumeManager to
+			// set the volume: TODO: Log It
+			go func(active bool) {
+				h.muteChannel <- active
+			}(mute.Active)
 		}
 	}
 }
