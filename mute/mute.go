@@ -1,6 +1,6 @@
 // Handle Mute Toggling
 
-package volume
+package mute
 
 import (
 	log "github.com/Sirupsen/logrus"

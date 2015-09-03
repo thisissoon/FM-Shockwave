@@ -9,19 +9,20 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/thisissoon/FM-Shockwave/event"
+	"github.com/thisissoon/FM-Shockwave/mute"
 	"github.com/thisissoon/FM-Shockwave/socket"
 	"github.com/thisissoon/FM-Shockwave/volume"
 )
 
 // Flag Variable Holders
 var (
-	perceptor_addr string
-	secret         string
-	max_volume     int
-	min_volume     int
-	mixer          string
-	device         string
-	log_level      string
+	perceptorAddr string
+	secret        string
+	max_volume    int
+	min_volume    int
+	mixer         string
+	device        string
+	log_level     string
 )
 
 // Long Command Description
@@ -54,7 +55,7 @@ var ShockWaveCmd = &cobra.Command{
 		muteChannel := make(chan bool)
 
 		// Consume events from Perceptor
-		perceptor := socket.NewPerceptorService(&perceptor_addr, &secret, eventChannel)
+		perceptor := socket.NewPerceptorService(&perceptorAddr, &secret, eventChannel)
 		go perceptor.Run()
 
 		// Event Handler
@@ -63,16 +64,17 @@ var ShockWaveCmd = &cobra.Command{
 
 		// Volume Manager
 		volumeManager := volume.NewVolumeManager(&volume.VolumeManagerOpts{
-			Channel:    volumeChannel,
-			MaxVolume:  &max_volume,
-			MinVolume:  &min_volume,
-			MixerName:  &mixer,
-			DeviceName: &device,
+			Channel:       volumeChannel,
+			MaxVolume:     &max_volume,
+			MinVolume:     &min_volume,
+			MixerName:     &mixer,
+			DeviceName:    &device,
+			PerceptorAddr: &perceptorAddr,
 		})
 		go volumeManager.Run()
 
 		// Mute Manager
-		muteManager := volume.NewMuteManager(muteChannel, &mixer, &device)
+		muteManager := mute.NewMuteManager(muteChannel, &mixer, &device)
 		go muteManager.Run()
 
 		// Channel to listen for OS Signals
@@ -88,7 +90,7 @@ var ShockWaveCmd = &cobra.Command{
 
 // Set Command Line Flags
 func init() {
-	ShockWaveCmd.Flags().StringVarP(&perceptor_addr, "perceptor", "p", "perceptor.thisissoon.fm", "Perceptor Server Address")
+	ShockWaveCmd.Flags().StringVarP(&perceptorAddr, "perceptor", "p", "perceptor.thisissoon.fm", "Perceptor Server Address")
 	ShockWaveCmd.Flags().StringVarP(&secret, "secret", "s", "CHANGE_ME", "Client Secret Ket")
 	ShockWaveCmd.Flags().IntVarP(&max_volume, "max_volume", "", 100, "Max Volume Level")
 	ShockWaveCmd.Flags().IntVarP(&min_volume, "min_volume", "", 0, "Min Volume Level")
