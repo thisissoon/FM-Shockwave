@@ -41,7 +41,7 @@ func (p *PerceptorService) Run() {
 			t, m, e := conn.ReadMessage()
 			// On Error close the connection and break the loop
 			if e != nil {
-				log.Errorf("WS Connection Lost: %s", err)
+				log.Errorf("WS Connection Lost: %s", e)
 				conn.Close()
 				break ReadLoop
 			}
