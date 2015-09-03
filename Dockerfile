@@ -1,5 +1,5 @@
 # Ubuntu just works
-FROM ubuntu:14.04
+FROM alpine:3.2
 MAINTAINER SOON_ <dorks@thisissoon.com>
 
 ## Environment Variables
@@ -7,21 +7,7 @@ ENV GOPATH /shockwave
 ENV PATH $PATH:$GOPATH/bin
 
 # OS Dependencies
-RUN apt-get update -y && apt-get install --no-install-recommends -y -q \
-        build-essential \
-        software-properties-common \
-        libasound2-dev \
-        git \
-    && apt-get clean \
-    && apt-get autoclean \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/{apt,dpkg,cache,log}/
-
-# Add Go PPA
-RUN apt-add-repository -y ppa:evarlast/golang1.4
-
-# Install Go
-RUN apt-get update && apt-get install -y golang
+RUN apk update && apk add go git ca-certificates alsa-lib-dev build-base bash && rm -rf /var/cache/apk/*
 
 # Set working Directory
 WORKDIR /shockwave
