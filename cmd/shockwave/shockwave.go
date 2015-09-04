@@ -33,7 +33,7 @@ var ShockWaveCmd = &cobra.Command{
 
 		// Consume events from Perceptor
 		perceptor := socket.NewPerceptorService(
-			viper.GetString("perceptor_addr"),
+			viper.GetString("perceptor_address"),
 			viper.GetString("secret"),
 			eventChannel)
 		go perceptor.Run()
@@ -49,7 +49,7 @@ var ShockWaveCmd = &cobra.Command{
 			MinVolume:     viper.GetInt("min"),
 			MixerName:     viper.GetString("mixer"),
 			DeviceName:    viper.GetString("device"),
-			PerceptorAddr: viper.GetString("perceptor_addr"),
+			PerceptorAddr: viper.GetString("perceptor_address"),
 			Secret:        viper.GetString("secret"),
 		})
 		go volumeManager.Run()
@@ -59,7 +59,7 @@ var ShockWaveCmd = &cobra.Command{
 			muteChannel,
 			viper.GetString("mixer"),
 			viper.GetString("device"),
-			viper.GetString("perceptor_addr"),
+			viper.GetString("perceptor_address"),
 			viper.GetString("secret"))
 		go muteManager.Run()
 
