@@ -8,6 +8,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/thisissoon/FM-Shockwave/event"
 	"github.com/thisissoon/FM-Shockwave/mute"
 	"github.com/thisissoon/FM-Shockwave/socket"
