@@ -16,8 +16,8 @@ import (
 
 type PerceptorService struct {
 	channel chan []byte
-	addr    *string
-	secret  *string
+	addr    string
+	secret  string
 }
 
 // Connect to Perceptor WS Service and Consume the Messages from the Service
@@ -30,7 +30,7 @@ func (p *PerceptorService) Run() {
 
 	// Attempt to connect to WS Service
 	for {
-		conn, _, err := d.Dial(fmt.Sprintf("ws://%s", *p.addr), p.headers())
+		conn, _, err := d.Dial(fmt.Sprintf("ws://%s", p.addr), p.headers())
 		if err != nil {
 			log.Errorf("WS Connection Failure: %s", err)
 			time.Sleep(time.Second)
@@ -60,7 +60,7 @@ func (p *PerceptorService) headers() http.Header {
 	data := []byte("") // No request data is sent
 
 	// Generate HMAC Signature
-	mac := hmac.New(sha256.New, []byte(*p.secret))
+	mac := hmac.New(sha256.New, []byte(p.secret))
 	mac.Write(data)
 	sig := base64.StdEncoding.EncodeToString(mac.Sum(nil))
 
@@ -72,7 +72,7 @@ func (p *PerceptorService) headers() http.Header {
 }
 
 // Creates a new PerceptorService
-func NewPerceptorService(addr *string, secret *string, channel chan []byte) *PerceptorService {
+func NewPerceptorService(addr string, secret string, channel chan []byte) *PerceptorService {
 	return &PerceptorService{
 		channel: channel,
 		addr:    addr,

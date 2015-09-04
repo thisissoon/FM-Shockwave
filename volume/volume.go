@@ -19,12 +19,12 @@ import (
 
 type VolumeManagerOpts struct {
 	Channel       chan int
-	MaxVolume     *int
-	MinVolume     *int
-	MixerName     *string
-	DeviceName    *string
-	PerceptorAddr *string
-	Secret        *string
+	MaxVolume     int
+	MinVolume     int
+	MixerName     string
+	DeviceName    string
+	PerceptorAddr string
+	Secret        string
 }
 
 type VolumeManager struct {
@@ -52,8 +52,8 @@ func (v *VolumeManager) Run() {
 // Set the Volume to the correct level
 func (v *VolumeManager) set(i int) error {
 	// Convert out ints to floats
-	min := float64(*v.opts.MinVolume)
-	max := float64(*v.opts.MaxVolume)
+	min := float64(v.opts.MinVolume)
+	max := float64(v.opts.MaxVolume)
 	level := float64(i) // Percentage
 
 	// Validate intended level
@@ -66,14 +66,14 @@ func (v *VolumeManager) set(i int) error {
 	log.Infof("Set level to: %v%% (%v%%)", level, volume)
 
 	// Set the Volume on the Device
-	device.SetVolume(*v.opts.DeviceName, *v.opts.MixerName, volume)
+	device.SetVolume(v.opts.DeviceName, v.opts.MixerName, volume)
 
 	return nil
 }
 
 func (v *VolumeManager) put(level int) error {
 	// Build URL
-	url := fmt.Sprintf("http://%s/volume", *v.opts.PerceptorAddr)
+	url := fmt.Sprintf("http://%s/volume", v.opts.PerceptorAddr)
 
 	// Generate Payload
 	payload, _ := json.Marshal(PerceptorPayload{
@@ -88,7 +88,7 @@ func (v *VolumeManager) put(level int) error {
 	}
 
 	// Generate HMAC
-	mac := hmac.New(sha256.New, []byte(*v.opts.Secret))
+	mac := hmac.New(sha256.New, []byte(v.opts.Secret))
 	mac.Write(payload)
 	sig := base64.StdEncoding.EncodeToString(mac.Sum(nil))
 

@@ -15,17 +15,6 @@ import (
 	"github.com/thisissoon/FM-Shockwave/volume"
 )
 
-// Flag Variable Holders
-var (
-	perceptorAddr string
-	secret        string
-	max_volume    int
-	min_volume    int
-	mixer         string
-	device        string
-	log_level     string
-)
-
 // Long Command Description
 var shockWaveLongDesc = `Shockwave Manages the Volume Levels on the System`
 
@@ -35,19 +24,6 @@ var ShockWaveCmd = &cobra.Command{
 	Short: "Volume Managment Service",
 	Long:  shockWaveLongDesc,
 	Run: func(cmd *cobra.Command, args []string) {
-		switch log_level {
-		case "debug":
-			log.SetLevel(log.DebugLevel)
-		case "info":
-			log.SetLevel(log.InfoLevel)
-		case "warn":
-			log.SetLevel(log.WarnLevel)
-		case "error":
-			log.SetLevel(log.ErrorLevel)
-		default:
-			log.SetLevel(log.WarnLevel)
-		}
-
 		log.Info("Starting Shockwave")
 
 		// Create Channels
@@ -56,7 +32,10 @@ var ShockWaveCmd = &cobra.Command{
 		muteChannel := make(chan bool)
 
 		// Consume events from Perceptor
-		perceptor := socket.NewPerceptorService(&perceptorAddr, &secret, eventChannel)
+		perceptor := socket.NewPerceptorService(
+			viper.GetString("perceptor_addr"),
+			viper.GetString("secret"),
+			eventChannel)
 		go perceptor.Run()
 
 		// Event Handler
@@ -66,17 +45,22 @@ var ShockWaveCmd = &cobra.Command{
 		// Volume Manager
 		volumeManager := volume.NewVolumeManager(&volume.VolumeManagerOpts{
 			Channel:       volumeChannel,
-			MaxVolume:     &max_volume,
-			MinVolume:     &min_volume,
-			MixerName:     &mixer,
-			DeviceName:    &device,
-			PerceptorAddr: &perceptorAddr,
-			Secret:        &secret,
+			MaxVolume:     viper.GetInt("max"),
+			MinVolume:     viper.GetInt("min"),
+			MixerName:     viper.GetString("mixer"),
+			DeviceName:    viper.GetString("device"),
+			PerceptorAddr: viper.GetString("perceptor_addr"),
+			Secret:        viper.GetString("secret"),
 		})
 		go volumeManager.Run()
 
 		// Mute Manager
-		muteManager := mute.NewMuteManager(muteChannel, &mixer, &device, &perceptorAddr, &secret)
+		muteManager := mute.NewMuteManager(
+			muteChannel,
+			viper.GetString("mixer"),
+			viper.GetString("device"),
+			viper.GetString("perceptor_addr"),
+			viper.GetString("secret"))
 		go muteManager.Run()
 
 		// Channel to listen for OS Signals
@@ -92,13 +76,41 @@ var ShockWaveCmd = &cobra.Command{
 
 // Set Command Line Flags
 func init() {
-	ShockWaveCmd.Flags().StringVarP(&perceptorAddr, "perceptor", "p", "perceptor.thisissoon.fm", "Perceptor Server Address")
-	ShockWaveCmd.Flags().StringVarP(&secret, "secret", "s", "CHANGE_ME", "Client Secret Ket")
-	ShockWaveCmd.Flags().IntVarP(&max_volume, "max_volume", "", 100, "Max Volume Level")
-	ShockWaveCmd.Flags().IntVarP(&min_volume, "min_volume", "", 0, "Min Volume Level")
-	ShockWaveCmd.Flags().StringVarP(&device, "device", "d", "default", "Audio Device Name")
-	ShockWaveCmd.Flags().StringVarP(&mixer, "mixer", "m", "PCM", "Audio Mixer Name")
-	ShockWaveCmd.Flags().StringVarP(&log_level, "log_level", "l", "debug", "Log Level")
+	// Load config from File
+	log.SetLevel(log.WarnLevel)
+
+	// Defaults
+	viper.SetDefault("log_level", "warn")
+	viper.SetDefault("perceptor_address", "localhost:9000")
+	viper.SetDefault("secret", "CHANGE_ME")
+	viper.SetDefault("max", 100)
+	viper.SetDefault("min", 0)
+	viper.SetDefault("device", "default")
+	viper.SetDefault("mixer", "PCM")
+
+	// From file
+	viper.SetConfigName("config")           // name of config file (without extension)
+	viper.AddConfigPath("/etc/shockwave/")  // path to look for the config file in
+	viper.AddConfigPath("$HOME/.shockwave") // call multiple times to add many search paths
+	viper.AddConfigPath("$PWD/.shockwave")  // call multiple times to add many search paths
+	err := viper.ReadInConfig()             // Find and read the config file
+	if err != nil {                         // Handle errors reading the config file
+		log.Warnf("No config file found or is not properly formatted: %s", err)
+	}
+
+	// Switch Log Level
+	switch viper.GetString("log_level") {
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "info":
+		log.SetLevel(log.InfoLevel)
+	case "warn":
+		log.SetLevel(log.WarnLevel)
+	case "error":
+		log.SetLevel(log.ErrorLevel)
+	default:
+		log.SetLevel(log.WarnLevel)
+	}
 }
 
 // Application Entry Point

@@ -19,10 +19,10 @@ var CURRENT_LEVEL int
 
 type MuteManager struct {
 	Channel       chan bool
-	MixerName     *string
-	DeviceName    *string
-	PerceptorAddr *string
-	Secret        *string
+	MixerName     string
+	DeviceName    string
+	PerceptorAddr string
+	Secret        string
 }
 
 type PerceptorPayload struct {
@@ -46,12 +46,12 @@ func (m *MuteManager) set(active bool) error {
 	if active {
 		// Set sound level to 0 on Mute
 		log.Info("Mute Volume")
-		CURRENT_LEVEL, _ = device.GetVolume(*m.DeviceName, *m.MixerName)
-		device.SetVolume(*m.DeviceName, *m.MixerName, 0)
+		CURRENT_LEVEL, _ = device.GetVolume(m.DeviceName, m.MixerName)
+		device.SetVolume(m.DeviceName, m.MixerName, 0)
 	} else {
 		// Restore sound level to 0 on Mute
 		log.Infof("Restore Volume to: %v", CURRENT_LEVEL)
-		device.SetVolume(*m.DeviceName, *m.MixerName, CURRENT_LEVEL)
+		device.SetVolume(m.DeviceName, m.MixerName, CURRENT_LEVEL)
 	}
 
 	return nil
@@ -59,7 +59,7 @@ func (m *MuteManager) set(active bool) error {
 
 func (m *MuteManager) put(active bool) error {
 	// Build URL
-	url := fmt.Sprintf("http://%s/mute", *m.PerceptorAddr)
+	url := fmt.Sprintf("http://%s/mute", m.PerceptorAddr)
 
 	// Generate Payload
 	payload, _ := json.Marshal(PerceptorPayload{
@@ -75,7 +75,7 @@ func (m *MuteManager) put(active bool) error {
 	}
 
 	// Generate HMAC
-	mac := hmac.New(sha256.New, []byte(*m.Secret))
+	mac := hmac.New(sha256.New, []byte(m.Secret))
 	mac.Write(payload)
 	sig := base64.StdEncoding.EncodeToString(mac.Sum(nil))
 
@@ -94,7 +94,7 @@ func (m *MuteManager) put(active bool) error {
 }
 
 // Construct a new mute manager
-func NewMuteManager(c chan bool, m *string, d *string, p *string, s *string) *MuteManager {
+func NewMuteManager(c chan bool, m string, d string, p string, s string) *MuteManager {
 	return &MuteManager{
 		Channel:       c,
 		MixerName:     m,
